@@ -1,0 +1,13 @@
+{
+  "test-version": false, 
+  "version": "1.0.0",
+  "releases-tag": "TAG:",
+  "info": {
+    "bundle-id": "com.yourcompany.yourapp",
+    "description": "This is your app.",
+    "changelog": "Initial release"
+  },
+  "changelog": "Initial release",
+  "description": "This is your app.",
+  "dylibName": "YourDylibName",
+}

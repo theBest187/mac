@@ -1,0 +1,157 @@
+name: Build Apps for Multiple Platforms
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-apple:
+    runs-on: macOS-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install jq
+        run: brew install jq
+        
+      - name: Install file
+        run: brew install file
+
+      
+      - name: Install Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Set Project Information
+        id: set-info
+        run: |
+          chmod 644 Info.json SupportedDevices.json
+          APP_VERSION=$(jq -r '.version' Info.json)
+          INFO_JSON=$(jq -r '.info' Info.json)
+          TESTVERSION=$(jq -r '.test-version' Info.json)
+          SUPPORTED_DEVICES=($(jq -r '.Apple[].platform' SupportedDevices.json))
+          SUPPORTED_DEVICES_BOOL=($(jq -r '.Apple[].enabled' SupportedDevices.json))
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "INFO_JSON=$INFO_JSON" >> $GITHUB_ENV
+
+      - name: Create Xcode Projects and Build
+        run: |
+          for i in "${!SUPPORTED_DEVICES[@]}"; do
+            if [[ "${SUPPORTED_DEVICES_BOOL[$i]}" == "true" ]]; then
+              echo "Building for ${SUPPORTED_DEVICES[$i]}"
+              xcodebuild -project "APP.xcodeproj" -scheme "APP" -sdk "${SUPPORTED_DEVICES[$i]}" -configuration Release
+            fi
+          done
+
+      - name: Archive Builds
+        run: |
+          mkdir -p builds/apple
+          cp -R build/Release-iphoneos/* builds/apple/
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install jq
+        run: brew install jq
+
+
+      - name: Build Windows DLL
+        run: |
+          echo "Building Windows DLL..."
+          # Replace with actual build commands for your DLL
+          clang++ -shared -o "windows-required-app-extension.dll" src/windows/your_code.cpp
+
+      - name: Move DLL to Output Directory
+        run: |
+          mkdir -p builds/windows
+          mv windows-required-app-extension.dll builds/windows/
+
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install jq
+        run: brew install jq
+
+
+      - name: Set up Android SDK
+        run: |
+          echo "Setting up Android SDK..."
+          # You can use a specific version or latest here
+          sudo apt-get install -y android-sdk
+
+      - name: Build Android App
+        run: |
+          echo "Building Android App..."
+          # Replace with actual build commands, e.g., using Gradle
+          ./gradlew assembleRelease
+
+      - name: Move APK to Output Directory
+        run: |
+          mkdir -p builds/android
+          mv app/build/outputs/apk/release/app-release.apk builds/android/
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build-apple, build-windows, build-android]
+    steps:
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install jq
+      - name: Set Project Information
+        id: set-info
+        run: |
+          
+          
+          APP_VERSION=$(jq -r '.version' Info.json)
+          INFO_JSON=$(jq -r '.info' Info.json)
+          TESTVERSION=$(jq -r '.test-version' Info.json)
+          SUPPORTED_DEVICES=($(jq -r '.Apple[].platform' SupportedDevices.json))
+          SUPPORTED_DEVICES_BOOL=($(jq -r '.Apple[].enabled' SupportedDevices.json))
+          DESC=$(jq -r '.description' Info.json)
+          CHANGELOG=$(jq -r '.changelog' Info.json)
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "INFO_JSON=$INFO_JSON" >> $GITHUB_ENV
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "APP-${APP_VERSION}"
+          name: "APP-${APP_VERSION}"
+          body: |
+            Description: "Description:${DESC} Changelog:${CHANGELOG}"
+          draft: ${TESTVERSION}
+          prerelease: ${TESTVERSION}
+
+      - name: Upload Artifacts to GitHub Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: builds/windows/windows-required-app-extension.dll
+          asset_name: "windows-required-app-extension.dll"
+          asset_content_type: application/octet-stream
+
+      - name: Upload Android APK
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: builds/android/app-release.apk
+          asset_name: "app-release.apk"
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload iOS and macOS builds
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: builds/apple/*
+          asset_name: "apple-build.zip"
+          asset_content_type: application/zip

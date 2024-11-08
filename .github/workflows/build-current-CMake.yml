@@ -1,0 +1,41 @@
+name: iOS CMAKE app Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up CMake
+        uses: jwlawson/actions-setup-cmake@v1
+
+      - name: Install dependencies
+        run: |
+          # Install required tools and dependencies
+          brew install cmake
+          # Install other dependencies if needed
+
+      - name: Configure and Build with CMake
+        run: |
+          mkdir -p build-ios
+          cd build-ios
+          cmake -G "Unix Makefiles" -DCMAKE_SYSTEM_NAME=iOS ../
+          make
+
+      - name: Package IPA
+        run: |
+          cd build-ios
+          mkdir -p Payload
+          cp -R app.app Payload/
+          zip -r app.ipa Payload
+
+      - name: Upload IPA as an artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build-ipa
+          path: build-ios/app.ipa

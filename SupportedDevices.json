@@ -1,0 +1,22 @@
+{
+  "Apple": [
+    {
+      "platform": "iOS",
+      "enabled": true
+    },
+    {
+      "platform": "macOS",
+      "enabled": false
+    }
+  ],
+  "Other": [
+    {
+      "platform": "Windows",
+      "enabled": false
+    },
+    {
+      "platform": "Android"
+      "enabled": false
+    }
+  ]
+}

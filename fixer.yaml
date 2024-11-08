@@ -1,0 +1,16 @@
+project_name: MyIOSApp
+source_dir: src/iOS
+source_patterns:
+  - "*.m"
+  - "*.mm"
+  - "*.c"
+  - "*.cpp"
+  - "*.png"
+  - "*.jpg"
+  - "*.wav"
+  - "*.mp3"
+  - "*.mov"
+  - "*.mp4"
+dependencies:
+  - UIKit
+  - Foundation

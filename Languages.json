@@ -1,0 +1,24 @@
+{
+  "CodingLanguages": [
+    {
+      "language": "Swift",
+      "enabled": true,
+      "supportedPlatform": "iOS"
+    },
+    {
+      "language": "Objective-C",
+      "enabled": true,
+      "supportedPlatform": "iOS"
+    },
+    {
+      "language": "SwiftUI",
+      "enabled": true,
+      "supportedPlatform": "iOS"
+    },
+    {
+      "language": "C++",
+      "enabled": true,
+      "supportedPlatform": "all"
+    }
+  ]
+}

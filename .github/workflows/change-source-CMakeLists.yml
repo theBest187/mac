@@ -1,0 +1,33 @@
+name: Generate CMakeLists.txt
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install PyYaml
+        run: |
+          pip install pyyaml 
+
+      - name: Generate CMakeLists.txt
+        run: |
+          python fixer.py
+          
+      - name: Run the Action
+        uses: devops-infra/action-commit-push@master
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          add_timestamp: false
+          commit_prefix: "[ACTIONS]"
+          commit_message: "source changes"
+          force: false
